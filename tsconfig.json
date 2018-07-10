@@ -1,0 +1,11 @@
+{
+  "compilerOptions": {
+    "outDir": "dist",
+    "target": "es2015",
+    "module": "commonjs",
+    "declaration": true,
+    "lib": ["es2015"],
+    "experimentalDecorators": true
+  },
+  "exclude": ["src/**/*.spec.ts"]
+}

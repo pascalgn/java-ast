@@ -1,0 +1,62 @@
+{
+  "name": "java-ast",
+  "version": "0.0.1",
+  "description": "Java Parser for JavaScript/TypeScript, based on antlr4ts",
+  "main": "dist/index.js",
+  "typings": "dist/index.d.ts",
+  "license": "MIT",
+  "repository": "https://github.com/urish/java-ast",
+  "author": "Uri Shaked <uri@codemagic.co.il>",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "rimraf dist && tsc",
+    "format": "prettier --write src/**.ts **/*.json",
+    "prepublish": "yarn build",
+    "generate:parser": "antlr4ts -visitor -o src/parser src/parser/JavaLexer.g4 src/parser/JavaParser.g4",
+    "precommit": "lint-staged",
+    "postcommit": "git update-index --again",
+    "test": "jest"
+  },
+  "devDependencies": {
+    "@types/jest": "^23.1.5",
+    "antlr4ts-cli": "^0.4.0-alpha.4",
+    "husky": "^0.14.3",
+    "jest": "^23.3.0",
+    "lint-staged": "^7.2.0",
+    "prettier": "^1.13.7",
+    "rimraf": "^2.6.2",
+    "ts-jest": "^23.0.0",
+    "tslint": "^5.10.0",
+    "typescript": "^2.9.2"
+  },
+  "dependencies": {
+    "antlr4ts": "^0.4.1-alpha.0"
+  },
+  "lint-staged": {
+    "*.{js,json}": [
+      "prettier --write",
+      "git add"
+    ],
+    "*.ts": [
+      "prettier --write",
+      "tslint --fix",
+      "git add"
+    ]
+  },
+  "jest": {
+    "transform": {
+      "^.+\\.tsx?$": "ts-jest"
+    },
+    "testRegex": "(/__tests__/.*|(\\.|/)(test|spec))\\.(jsx?|tsx?)$",
+    "moduleFileExtensions": [
+      "ts",
+      "tsx",
+      "js",
+      "jsx",
+      "json",
+      "node"
+    ]
+  }
+}
