@@ -2,6 +2,7 @@
 
 Java Parser for JavaScript/TypeScript, based on [antlr4ts](https://www.npmjs.com/package/antlr4ts)
 
+[![npm version](https://img.shields.io/npm/v/java-ast.svg)](https://www.npmjs.com/package/java-ast)
 [![Build Status](https://travis-ci.org/urish/java-ast.png?branch=master)](https://travis-ci.org/urish/java-ast)
 [![code style: prettier](https://img.shields.io/badge/code_style-prettier-ff69b4.svg?style=flat-square)](https://github.com/prettier/prettier)
 
