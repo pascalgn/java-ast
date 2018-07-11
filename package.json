@@ -1,12 +1,22 @@
 {
   "name": "java-ast",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "description": "Java Parser for JavaScript/TypeScript, based on antlr4ts",
   "main": "dist/index.js",
   "typings": "dist/index.d.ts",
   "license": "MIT",
   "repository": "https://github.com/urish/java-ast",
   "author": "Uri Shaked <uri@codemagic.co.il>",
+  "keywords": [
+    "ast",
+    "java",
+    "parser",
+    "antlr",
+    "antlr4ts",
+    "abstract syntax tree",
+    "parse java",
+    "java parser"
+  ],
   "files": [
     "dist"
   ],
