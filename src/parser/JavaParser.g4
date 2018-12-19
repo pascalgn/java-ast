@@ -460,7 +460,7 @@ expressionList
     ;
 
 methodCall
-    : IDENTIFIER '(' expressionList? ')'
+    : IDENTIFIER arguments
     ;
 
 expression
