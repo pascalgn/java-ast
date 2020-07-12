@@ -524,7 +524,7 @@ lambdaBody
 primary
     : '(' expression ')'
     | THIS
-    | SUPER
+    | SUPER superSuffix
     | literal
     | IDENTIFIER
     | typeTypeOrVoid '.' CLASS
