@@ -1,9 +1,6 @@
-import { ParseTreeWalker } from 'antlr4ts/tree/ParseTreeWalker';
-import { parse } from './index';
-import { ExpressionContext } from './parser/JavaParser';
-import { JavaParserListener } from './parser/JavaParserListener';
+import { createVisitor, parse, walk } from './index';
 
-describe('Java AST parser', () => {
+describe('parser', () => {
   it('should parse the given Java code and return the AST', () => {
     const tree = parse(`
       class TestClass {
@@ -22,15 +19,32 @@ describe('Java AST parser', () => {
     `);
 
     const expressions = [];
-    ParseTreeWalker.DEFAULT.walk(
-      {
-        enterExpression(context: ExpressionContext) {
-          expressions.push(context.text);
-        },
-      } as JavaParserListener,
-      tree,
-    );
+    walk({ enterExpression: (c) => expressions.push(c.text) }, tree);
 
     expect(expressions).toContain('super(1)');
+  });
+});
+
+describe('usage example', () => {
+  it('works', () => {
+    const countMethods = (source: string) =>
+      createVisitor({
+        visitMethodDeclaration: () => 1,
+        defaultResult: () => 0,
+        aggregateResult: (a, b) => a + b,
+      }).visit(parse(source));
+
+    expect(
+      countMethods(`
+      class A {
+        int a;
+        void b() {}
+        void c() {}
+      }
+      class B {
+        void z() {}
+      }
+    `),
+    ).toEqual(3);
   });
 });

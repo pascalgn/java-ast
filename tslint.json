@@ -5,7 +5,8 @@
   "rules": {
     "quotemark": [true, "single", "avoid-escape", "avoid-template"],
     "member-access": [true, "no-public"],
-    "interface-name": [true, "never-prefix"]
+    "interface-name": [true, "never-prefix"],
+    "object-literal-sort-keys": false
   },
   "linterOptions": {
     "exclude": ["src/parser/*.ts"]
