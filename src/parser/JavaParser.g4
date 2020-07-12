@@ -475,6 +475,7 @@ expression
       )
     | expression '[' expression ']'
     | methodCall
+    | SUPER superSuffix
     | NEW creator
     | '(' typeType ')' expression
     | expression postfix=('++' | '--')
@@ -524,7 +525,7 @@ lambdaBody
 primary
     : '(' expression ')'
     | THIS
-    | SUPER superSuffix
+    | SUPER
     | literal
     | IDENTIFIER
     | typeTypeOrVoid '.' CLASS

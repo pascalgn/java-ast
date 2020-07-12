@@ -23,6 +23,21 @@ describe('parser', () => {
 
     expect(expressions).toContain('super(1)');
   });
+
+  it('should allow super alone as expression', () => {
+    const tree = parse(`
+      class B extends A {
+        public B() {
+          super;
+        }
+      }
+    `);
+
+    const expressions = [];
+    walk({ enterExpression: (c) => expressions.push(c.text) }, tree);
+
+    expect(expressions).toContain('super');
+  });
 });
 
 describe('usage example', () => {
