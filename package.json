@@ -25,12 +25,14 @@
     "format": "prettier --write src/**.ts **/*.json",
     "prepublish": "yarn build",
     "generate:parser": "antlr4ts -visitor -o src/parser src/parser/JavaLexer.g4 src/parser/JavaParser.g4",
+    "generate:contexts": "node generate-contexts.js",
     "precommit": "lint-staged",
     "postcommit": "git update-index --again",
     "test": "jest"
   },
   "devDependencies": {
     "@types/jest": "^23.1.5",
+    "@types/node": "^14.0.22",
     "antlr4ts-cli": "^0.4.0-alpha.4",
     "husky": "^0.14.3",
     "jest": "^23.3.0",
@@ -39,7 +41,7 @@
     "rimraf": "^2.6.2",
     "ts-jest": "^23.0.0",
     "tslint": "^5.10.0",
-    "typescript": "~2.8.2"
+    "typescript": "^3.9.6"
   },
   "dependencies": {
     "antlr4ts": "^0.4.1-alpha.0"

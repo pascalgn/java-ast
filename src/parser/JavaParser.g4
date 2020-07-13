@@ -475,6 +475,7 @@ expression
       )
     | expression '[' expression ']'
     | methodCall
+    | SUPER superSuffix
     | NEW creator
     | '(' typeType ')' expression
     | expression postfix=('++' | '--')
