@@ -5,3 +5,4 @@ src/parser/JavaParserListener.ts
 src/parser/JavaParserVisitor.ts
 src/parser/JavaLexer.ts
 src/parser/JavaContexts.ts
+src/parser/*.interp

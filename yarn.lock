@@ -664,13 +664,15 @@ ansi-styles@^4.0.0, ansi-styles@^4.1.0:
     "@types/color-name" "^1.1.1"
     color-convert "^2.0.1"
 
-antlr4ts-cli@^0.4.0-alpha.4:
-  version "0.4.0-alpha.4"
-  resolved "https://registry.yarnpkg.com/antlr4ts-cli/-/antlr4ts-cli-0.4.0-alpha.4.tgz#ab43073687b034f6a25b1f46a581bf79c6c28dd7"
+antlr4ts-cli@^0.5.0-alpha.3:
+  version "0.5.0-alpha.3"
+  resolved "https://registry.yarnpkg.com/antlr4ts-cli/-/antlr4ts-cli-0.5.0-alpha.3.tgz#1f581b2a3c840d3921a2f3b1e739e48c7e7c18cd"
+  integrity sha512-i6oyxfaXU6qnw4HgyeSIsOLlsvT7zU3vmenoJKFNVFP1QNodtJMZYpnyxc8TmOFpJs7fEoWanLavSSDEmcCZBQ==
 
-antlr4ts@^0.4.1-alpha.0:
-  version "0.4.1-alpha.0"
-  resolved "https://registry.yarnpkg.com/antlr4ts/-/antlr4ts-0.4.1-alpha.0.tgz#ac5717f30f3efa3617b004e8ff4f860b9c7d4d20"
+antlr4ts@^0.5.0-alpha.3:
+  version "0.5.0-alpha.3"
+  resolved "https://registry.yarnpkg.com/antlr4ts/-/antlr4ts-0.5.0-alpha.3.tgz#fa6d39d88d6b96341a8afef45867af9abcb38766"
+  integrity sha512-La89tKkGcHFIVuruv4Bm1esc3zLmES2NOTEwwNS1pudz+zx/0FNqQeUu9p48i9/QHKPVqjN87LB+q3buTg7oDQ==
 
 any-observable@^0.3.0:
   version "0.3.0"
