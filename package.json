@@ -31,15 +31,15 @@
     "test": "jest"
   },
   "devDependencies": {
-    "@types/jest": "^23.1.5",
+    "@types/jest": "^26.0.4",
     "@types/node": "^14.0.22",
     "antlr4ts-cli": "^0.4.0-alpha.4",
     "husky": "^0.14.3",
-    "jest": "^23.3.0",
+    "jest": "^26.1.0",
     "lint-staged": "^7.2.0",
     "prettier": "^1.13.7",
     "rimraf": "^2.6.2",
-    "ts-jest": "^23.0.0",
+    "ts-jest": "^26.1.1",
     "tslint": "^5.10.0",
     "typescript": "^3.9.6"
   },
