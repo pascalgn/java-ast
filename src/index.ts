@@ -42,6 +42,8 @@ export { JavaParserListener } from './parser/JavaParserListener';
 /**
  * Create a parse tree visitor
  */
+export function createVisitor<T>(visitor: Visitor<T>): ConcreteVisitor<T>;
+export function createVisitor(visitor: VoidVisitor): ConcreteVisitor<void>;
 export function createVisitor<T>(visitor: Visitor<T>): ConcreteVisitor<T> {
   // we don't want users to write classes because it's not JavaScript-y
   // so we'll set implementation of abstract methods and other visit* methods in constructor
@@ -49,16 +51,24 @@ export function createVisitor<T>(visitor: Visitor<T>): ConcreteVisitor<T> {
   return new class extends AbstractParseTreeVisitor<T> {
     constructor() {
       super();
-      Object.assign(this, visitor);
+      Object.assign(this, {
+        defaultResult: () => undefined,
+        aggregateResult: () => undefined,
+        ...visitor,
+      });
     }
   }();
 }
 
 export interface Visitor<T>
   extends AbstractVisitor<T>,
-    Omit<JavaParserVisitor<T>, NonOverridableMethods> {}
+    OmitStrict<JavaParserVisitor<T>, NonOverridableMethods> {}
+
+export interface VoidVisitor
+  extends OmitStrict<Visitor<void>, 'defaultResult' | 'aggregateResult'> {}
 
 type NonOverridableMethods = keyof ParseTreeVisitor<any>;
+type OmitStrict<T, K extends keyof T> = Omit<T, K>;
 
 // Just to create a better name
 export interface ConcreteVisitor<T> extends AbstractParseTreeVisitor<T> {}
