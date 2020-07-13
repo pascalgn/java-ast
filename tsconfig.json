@@ -7,5 +7,6 @@
     "lib": ["es2015"],
     "experimentalDecorators": true
   },
+  "include": ["src/**/*.ts"],
   "exclude": ["src/**/*.spec.ts"]
 }

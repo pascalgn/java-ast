@@ -21,7 +21,7 @@
     "dist"
   ],
   "scripts": {
-    "build": "rimraf dist && tsc",
+    "build": "rimraf dist && npm run generate:parser && npm run generate:contexts && tsc",
     "format": "prettier --write src/**.ts **/*.json",
     "prepublish": "yarn build",
     "generate:parser": "antlr4ts -visitor -o src/parser src/parser/JavaLexer.g4 src/parser/JavaParser.g4",
