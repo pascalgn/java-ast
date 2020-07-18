@@ -12,67 +12,60 @@ const files = [
   'JavaLexer.g4'
 ];
 
-const main = () =>
-  withLog(
+const main = async () => {
+  let isStale = await withLog(
     'Checking if head is stale... ',
     getIsStale(),
     isStale => isStale ? 'Stale' : 'Up-to date'
   )
-  .then(isStale => isStale || process.argv.includes('--force'))
-  .then(shouldBuild =>
-    !shouldBuild
-      ? (console.log('Exiting, use --force to build anyway'), Promise.reject(terminationSignal))
-      : Promise.resolve()
-  )
-  .then(() => withLog('Fetching files from upstream... ', getFiles()))
-  .then(files => withLog('Writing files... ', writeFiles(files)))
-  .then(() => withLog('Updating head.json... ', updateHead()))
-  .then(() => withLog('Generating parser...\n', writeParser()))
-  .then(() => withLog('Generating contexts... ', writeParserContexts()))
-  .then(() => withLog('Compiling typescript files... ', writeJavascript()))
-  .then(() => console.log('Build successful!'))
-  .catch(payload =>
-    payload === terminationSignal
-      ? Promise.resolve()
-      : Promise.reject(payload)
-  )
+  if (!isStale && !process.argv.includes('--force')) {
+    console.log('Exiting, use --force to build anyway');
+    return;
+  }
+  let files = await withLog('Fetching files from upstream... ', getFiles());
+  await withLog('Writing files... ', writeFiles(files));
+  await withLog('Updating head.json... ', updateHead());
+  await withLog('Generating parser...\n', writeParser());
+  await withLog('Generating contexts... ', writeParserContexts());
+  await withLog('Compiling typescript files... ', writeJavascript());
+  console.log('Build successful!');
+}
 
-const getIsStale = () => 
-  Promise.all([getHead(), getUpstreamHead()])
-  .then(([head, upstreamHead]) =>
-    files.some(file => head[file] !== upstreamHead[file])
-  )
+const getIsStale = async () => {
+  let [head, upstreamHead] = await Promise.all([getHead(), getUpstreamHead()]);
+  return files.some(file => head[file] !== upstreamHead[file]);
+}
 
-const getHead = () =>
-  fs.readFile(path.join(__dirname, 'src/head.json'), 'utf-8')
-  .then(JSON.parse) as Promise<{ [file: string]: string }>
+const getHead = async () =>
+  JSON.parse(
+    await fs.readFile(path.join(__dirname, 'src/head.json'), 'utf-8')
+  ) as { [file: string]: string };
 
 let upstreamHeadCache: { [file: string]: string } | undefined;
-const getUpstreamHead = () =>
-  upstreamHeadCache ? Promise.resolve(upstreamHeadCache) :
-  Promise.all(
-    files.map(file =>
-      fetch(`https://api.github.com/repos/antlr/grammars-v4/commits?path=java/java/${file}`)
-      .then(res => res.json())
-      .then(commits => ({ [file]: commits[0].sha as string }))
+const getUpstreamHead = async () => {
+  if (upstreamHeadCache) return upstreamHeadCache;
+
+  let upstreamHead = mergeAll(
+    await Promise.all(
+      files.map(async file => {
+        let res = await fetch(`https://api.github.com/repos/antlr/grammars-v4/commits?path=java/java/${file}`);
+        let commits = await res.json();
+        return { [file]: commits[0].sha as string };
+      })
     )
   )
-  .then(mergeAll)
-  .then(upstreamHead => {
-    upstreamHeadCache = upstreamHead;
-    return Promise.resolve(upstreamHead);
-  });
+  upstreamHeadCache = upstreamHead;
+  return upstreamHead;
+}
   
-const getFiles = () =>
-  Promise.all(
-    files.map(
-      file => 
-      fetch(`https://raw.githubusercontent.com/antlr/grammars-v4/master/java/java/${file}`)
-      .then(res => res.text())
-      .then(data => ({ [file]: data }))
-    )
-  )
-  .then(mergeAll)
+const getFiles = async () =>
+  mergeAll(await Promise.all(
+    files.map(async file => {
+      let res = await fetch(`https://raw.githubusercontent.com/antlr/grammars-v4/master/java/java/${file}`)
+      let data = await res.text();
+      return { [file]: data };
+    })
+  ))
 
 const writeFiles = (files: { [file: string]: string }) =>
   Promise.all(
@@ -82,21 +75,19 @@ const writeFiles = (files: { [file: string]: string }) =>
     )
   )
 
-const updateHead = () =>
-  getUpstreamHead()
-  .then(head =>
-    fs.writeFile(
-      path.join(__dirname, 'src/head.json'),
-      JSON.stringify(head, null, '  ')
-    )
+const updateHead = async () =>
+  fs.writeFile(
+    path.join(__dirname, 'src/head.json'),
+    JSON.stringify(await getUpstreamHead(), null, '  ')
   )
 
 const writeParser = () =>
   execCommand(`${prependBinDir('antlr4ts')} -visitor -o src/parser -Xexact-output-dir src/parser/JavaLexer.g4 src/parser/JavaParser.g4`)
 
-const writeParserContexts = () =>
-  fs.readFile(path.join(__dirname, '/src/parser/JavaParserListener.ts'), 'utf-8')
-  .then(listenerSource =>
+const writeParserContexts = async () => {
+  let listenerSource = await fs.readFile(path.join(__dirname, '/src/parser/JavaParserListener.ts'), 'utf-8');
+
+  let exportList = 
     listenerSource
     .split(EOL)
     .map((l) => {
@@ -105,43 +96,42 @@ const writeParserContexts = () =>
       return matches[1];
     })
     .filter((c) => c !== null)
-  )
-  .then(contexts => contexts.reduce((list, context) => list + `  ${context},${EOL}`, ''))
-  .then(exportList => `export {${EOL}${exportList}} from './JavaParser';`)
-  .then(contextsSource => fs.writeFile(path.join(__dirname, '/src/parser/JavaContexts.ts'), contextsSource));
+    .reduce((list, context) => list + `  ${context},${EOL}`, '');
 
-const writeJavascript = () => 
-  promisify(rimraf)(path.join(__dirname, "/dist"))
-  .then(() => execCommand(prependBinDir('tsc')));
+  await fs.writeFile(
+    path.join(__dirname, '/src/parser/JavaContexts.ts'),
+    `export {${EOL}${exportList}} from './JavaParser';`
+  );
+}
 
-const withLog = <T>(
+const writeJavascript = async () => {
+  await promisify(rimraf)(path.join(__dirname, "/dist"))
+  await execCommand(prependBinDir('tsc'))
+}
+
+const withLog = async <T>(
   label: string,
   promise: Promise<T>,
   fulfilMessage: ((value: T) => string) = () => 'Done'
 ) => {
   process.stdout.write(label);
-  return promise
-  .then(value => {
+  try {
+    let value = await promise;
     process.stdout.write(fulfilMessage(value) + '\n')
-    return Promise.resolve(value);
-  })
-  .catch(error => {
+    return value;
+  } catch (error) {
     process.stdout.write('Something went wrong\n');
-    return Promise.reject(error);
-  })
+    throw error;
+  }
 }
 
-const terminationSignal = Symbol('terminationSignal');
-
-const execCommand = (command: string) => {
+const execCommand = async (command: string) => {
   let childProcess = exec(command, { cwd: __dirname })
   childProcess.stdout.pipe(process.stdout);
   childProcess.stderr.pipe(process.stderr);
 
-  return (
-    once(childProcess, 'exit')
-    .then(([code]: [number]) => code === 0 ? Promise.resolve() : Promise.reject())
-  )
+  let [code] = await once(childProcess, 'exit') as [number];
+  if (code !== 0) throw undefined;
 }
 
 const prependBinDir = (p: string) =>
