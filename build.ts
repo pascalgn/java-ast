@@ -1,3 +1,5 @@
+// tslint:disable:no-console
+
 import { promises as fs } from 'fs';
 import rimraf from 'rimraf';
 import fetch from 'node-fetch';
@@ -7,22 +9,22 @@ import { once } from 'events';
 import { EOL } from 'os';
 import { promisify } from 'util';
 
-const files = [
+const grammerFiles = [
   'JavaParser.g4',
   'JavaLexer.g4'
 ];
 
 const main = async () => {
-  let isStale = await withLog(
+  const isStale = await withLog(
     'Checking if head is stale... ',
     getIsStale(),
-    isStale => isStale ? 'Stale' : 'Up-to date'
+    isStaleValue => isStaleValue ? 'Stale' : 'Up-to date'
   )
   if (!isStale && !process.argv.includes('--force')) {
     console.log('Exiting, use --force to build anyway');
     return;
   }
-  let files = await withLog('Fetching files from upstream... ', getFiles());
+  const files = await withLog('Fetching files from upstream... ', getFiles());
   await withLog('Writing files... ', writeFiles(files));
   await withLog('Updating head.json... ', updateHead());
   await withLog('Generating parser...\n', writeParser());
@@ -32,8 +34,8 @@ const main = async () => {
 }
 
 const getIsStale = async () => {
-  let [head, upstreamHead] = await Promise.all([getHead(), getUpstreamHead()]);
-  return files.some(file => head[file] !== upstreamHead[file]);
+  const [head, upstreamHead] = await Promise.all([getHead(), getUpstreamHead()]);
+  return grammerFiles.some(file => head[file] !== upstreamHead[file]);
 }
 
 const getHead = async () =>
@@ -45,11 +47,11 @@ let upstreamHeadCache: { [file: string]: string } | undefined;
 const getUpstreamHead = async () => {
   if (upstreamHeadCache) return upstreamHeadCache;
 
-  let upstreamHead = mergeAll(
+  const upstreamHead = mergeAll(
     await Promise.all(
-      files.map(async file => {
-        let res = await fetch(`https://api.github.com/repos/antlr/grammars-v4/commits?path=java/java/${file}`);
-        let commits = await res.json();
+      grammerFiles.map(async file => {
+        const res = await fetch(`https://api.github.com/repos/antlr/grammars-v4/commits?path=java/java/${file}`);
+        const commits = await res.json();
         return { [file]: commits[0].sha as string };
       })
     )
@@ -57,12 +59,12 @@ const getUpstreamHead = async () => {
   upstreamHeadCache = upstreamHead;
   return upstreamHead;
 }
-  
+
 const getFiles = async () =>
   mergeAll(await Promise.all(
-    files.map(async file => {
-      let res = await fetch(`https://raw.githubusercontent.com/antlr/grammars-v4/master/java/java/${file}`)
-      let data = await res.text();
+    grammerFiles.map(async file => {
+      const res = await fetch(`https://raw.githubusercontent.com/antlr/grammars-v4/master/java/java/${file}`)
+      const data = await res.text();
       return { [file]: data };
     })
   ))
@@ -85,13 +87,13 @@ const writeParser = () =>
   execCommand(`${prependBinDir('antlr4ts')} -visitor -o src/parser -Xexact-output-dir src/parser/JavaLexer.g4 src/parser/JavaParser.g4`)
 
 const writeParserContexts = async () => {
-  let listenerSource = await fs.readFile(path.join(__dirname, '/src/parser/JavaParserListener.ts'), 'utf-8');
+  const listenerSource = await fs.readFile(path.join(__dirname, '/src/parser/JavaParserListener.ts'), 'utf-8');
 
-  let exportList = 
+  const exportList =
     listenerSource
     .split(EOL)
     .map((l) => {
-      let matches = l.match(/import\s*\{\s*(.*Context)\s*\}.*/);
+      const matches = l.match(/import\s*\{\s*(.*Context)\s*\}.*/);
       if (matches === null) return null;
       return matches[1];
     })
@@ -105,7 +107,7 @@ const writeParserContexts = async () => {
 }
 
 const writeJavascript = async () => {
-  await promisify(rimraf)(path.join(__dirname, "/dist"))
+  await promisify(rimraf)(path.join(__dirname, '/dist'))
   await execCommand(prependBinDir('tsc'))
 }
 
@@ -116,7 +118,7 @@ const withLog = async <T>(
 ) => {
   process.stdout.write(label);
   try {
-    let value = await promise;
+    const value = await promise;
     process.stdout.write(fulfilMessage(value) + '\n')
     return value;
   } catch (error) {
@@ -126,21 +128,21 @@ const withLog = async <T>(
 }
 
 const execCommand = async (command: string) => {
-  let childProcess = exec(command, { cwd: __dirname })
+  const childProcess = exec(command, { cwd: __dirname })
   childProcess.stdout.pipe(process.stdout);
   childProcess.stderr.pipe(process.stderr);
 
-  let [code] = await once(childProcess, 'exit') as [number];
+  const [code] = await once(childProcess, 'exit') as [number];
   if (code !== 0) throw undefined;
 }
 
 const prependBinDir = (p: string) =>
-  path.join(__dirname, "/node_modules/.bin/", p);
+  path.join(__dirname, '/node_modules/.bin/', p);
 
 type MergeAll = <T extends object[]>(xs: T) => UnionToIntersection<T[number]>;
 const mergeAll: MergeAll = xs => xs.reduce((m, x) => ({ ...m, ...x }), {}) as any;
-  
-type UnionToIntersection<U> = 
+
+type UnionToIntersection<U> =
   (U extends any ? (k: U) => void : never) extends ((k: infer I) => void) ? I : never
 
 main();
