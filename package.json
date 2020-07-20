@@ -22,7 +22,8 @@
   ],
   "scripts": {
     "build": "ts-node build.ts",
-    "format": "prettier --write build.ts src/**.ts **/*.json",
+    "update": "ts-node update.ts",
+    "format": "prettier --write build.ts update.ts src/**.ts **/*.json",
     "prepublish": "yarn build",
     "precommit": "lint-staged",
     "postcommit": "git update-index --again",

@@ -9,88 +9,58 @@ import { once } from 'events';
 import { EOL } from 'os';
 import { promisify } from 'util';
 
-const grammerFiles = [
-  'JavaParser.g4',
-  'JavaLexer.g4'
-];
+export const grammerFiles = ['JavaParser.g4', 'JavaLexer.g4'];
+export const grammerRoot = 'src/parser';
 
-const main = async () => {
-  const isStale = await withLog(
-    'Checking if head is stale... ',
-    getIsStale(),
-    isStaleValue => isStaleValue ? 'Stale' : 'Up-to date'
-  )
-  if (!isStale && !process.argv.includes('--force')) {
-    console.log('Exiting, use --force to build anyway');
-    return;
-  }
-  const files = await withLog('Fetching files from upstream... ', getFiles());
+export const main = async () => {
+  const heads = await withLog('Reading head.json ', getHead());
+  const files = await withLog('Fetching files from upstream... ', getFiles(heads));
   await withLog('Writing files... ', writeFiles(files));
-  await withLog('Updating head.json... ', updateHead());
   await withLog('Generating parser...\n', writeParser());
   await withLog('Generating contexts... ', writeParserContexts());
   await withLog('Compiling typescript files... ', writeJavascript());
   console.log('Build successful!');
-}
+};
 
-const getIsStale = async () => {
-  const [head, upstreamHead] = await Promise.all([getHead(), getUpstreamHead()]);
-  return grammerFiles.some(file => head[file] !== upstreamHead[file]);
-}
+export const getHead = async () =>
+  JSON.parse(await fs.readFile(path.join(__dirname, 'src/head.json'), 'utf-8')) as {
+    [file: string]: string;
+  };
 
-const getHead = async () =>
-  JSON.parse(
-    await fs.readFile(path.join(__dirname, 'src/head.json'), 'utf-8')
-  ) as { [file: string]: string };
-
-let upstreamHeadCache: { [file: string]: string } | undefined;
-const getUpstreamHead = async () => {
-  if (upstreamHeadCache) return upstreamHeadCache;
-
-  const upstreamHead = mergeAll(
+const getFiles = async (heads: { [key: string]: string }) =>
+  mergeAll(
     await Promise.all(
-      grammerFiles.map(async file => {
-        const res = await fetch(`https://api.github.com/repos/antlr/grammars-v4/commits?path=java/java/${file}`);
-        const commits = await res.json();
-        return { [file]: commits[0].sha as string };
-      })
-    )
-  )
-  upstreamHeadCache = upstreamHead;
-  return upstreamHead;
-}
-
-const getFiles = async () =>
-  mergeAll(await Promise.all(
-    grammerFiles.map(async file => {
-      const res = await fetch(`https://raw.githubusercontent.com/antlr/grammars-v4/master/java/java/${file}`)
-      const data = await res.text();
-      return { [file]: data };
-    })
-  ))
+      grammerFiles.map(async (file) => {
+        const res = await fetch(
+          `https://raw.githubusercontent.com/antlr/grammars-v4/${heads[file]}/java/java/${file}`,
+        );
+        const data = await res.text();
+        return { [file]: data };
+      }),
+    ),
+  );
 
 const writeFiles = (files: { [file: string]: string }) =>
   Promise.all(
-    Object.entries(files)
-    .map(([file, data]) =>
-      fs.writeFile(path.join(__dirname, 'src/parser/', file), data)
-    )
-  )
+    Object.entries(files).map(([file, data]) =>
+      fs.writeFile(path.join(__dirname, grammerRoot, file), data),
+    ),
+  );
 
-const updateHead = async () =>
-  fs.writeFile(
-    path.join(__dirname, 'src/head.json'),
-    JSON.stringify(await getUpstreamHead(), null, '  ')
-  )
-
-const writeParser = () =>
-  execCommand(`${prependBinDir('antlr4ts')} -visitor -o src/parser -Xexact-output-dir src/parser/JavaLexer.g4 src/parser/JavaParser.g4`)
+const writeParser = () => {
+  const binary = prependBinDir('antlr4ts');
+  return execCommand(
+    `${binary} -visitor -o ${grammerRoot} -Xexact-output-dir ${grammerRoot}/JavaLexer.g4 ${grammerRoot}/JavaParser.g4`,
+  );
+};
 
 const writeParserContexts = async () => {
-  const listenerSource = await fs.readFile(path.join(__dirname, '/src/parser/JavaParserListener.ts'), 'utf-8');
+  const listenerSource = await fs.readFile(
+    path.join(__dirname, grammerRoot, 'JavaParserListener.ts'),
+    'utf-8',
+  );
 
-  const exportList =
-    listenerSource
+  const exportList = listenerSource
     .split(EOL)
     .map((l) => {
       const matches = l.match(/import\s*\{\s*(.*Context)\s*\}.*/);
@@ -101,48 +71,50 @@ const writeParserContexts = async () => {
     .reduce((list, context) => list + `  ${context},${EOL}`, '');
 
   await fs.writeFile(
-    path.join(__dirname, '/src/parser/JavaContexts.ts'),
-    `export {${EOL}${exportList}} from './JavaParser';`
+    path.join(__dirname, grammerRoot, 'JavaContexts.ts'),
+    `export {${EOL}${exportList}} from './JavaParser';`,
   );
-}
+};
 
 const writeJavascript = async () => {
-  await promisify(rimraf)(path.join(__dirname, '/dist'))
-  await execCommand(prependBinDir('tsc'))
-}
+  await promisify(rimraf)(path.join(__dirname, '/dist'));
+  await execCommand(prependBinDir('tsc'));
+};
 
-const withLog = async <T>(
+export const withLog = async <T>(
   label: string,
   promise: Promise<T>,
-  fulfilMessage: ((value: T) => string) = () => 'Done'
+  fulfilMessage: (value: T) => string = () => 'Done',
 ) => {
   process.stdout.write(label);
   try {
     const value = await promise;
-    process.stdout.write(fulfilMessage(value) + '\n')
+    process.stdout.write(fulfilMessage(value) + '\n');
     return value;
   } catch (error) {
     process.stdout.write('Something went wrong\n');
     throw error;
   }
-}
+};
 
 const execCommand = async (command: string) => {
-  const childProcess = exec(command, { cwd: __dirname })
+  const childProcess = exec(command, { cwd: __dirname });
   childProcess.stdout.pipe(process.stdout);
   childProcess.stderr.pipe(process.stderr);
 
-  const [code] = await once(childProcess, 'exit') as [number];
+  const [code] = (await once(childProcess, 'exit')) as [number];
   if (code !== 0) throw undefined;
+};
+
+const prependBinDir = (p: string) => path.join(__dirname, '/node_modules/.bin/', p);
+
+export type MergeAll = <T extends object[]>(xs: T) => UnionToIntersection<T[number]>;
+export const mergeAll: MergeAll = (xs) => xs.reduce((m, x) => ({ ...m, ...x }), {}) as any;
+
+type UnionToIntersection<U> = (U extends any ? (k: U) => void : never) extends (k: infer I) => void
+  ? I
+  : never;
+
+if (require.main === module) {
+  main();
 }
-
-const prependBinDir = (p: string) =>
-  path.join(__dirname, '/node_modules/.bin/', p);
-
-type MergeAll = <T extends object[]>(xs: T) => UnionToIntersection<T[number]>;
-const mergeAll: MergeAll = xs => xs.reduce((m, x) => ({ ...m, ...x }), {}) as any;
-
-type UnionToIntersection<U> =
-  (U extends any ? (k: U) => void : never) extends ((k: infer I) => void) ? I : never
-
-main();
