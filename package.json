@@ -1,6 +1,6 @@
 {
   "name": "java-ast",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "Java Parser for JavaScript/TypeScript, based on antlr4ts",
   "main": "dist/index.js",
   "typings": "dist/index.d.ts",
